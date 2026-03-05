@@ -1,6 +1,7 @@
 # Context
 Nobious is a cloud-based multi-tenant inventory management system.
 Customers can access the system via web or mobile application.
+An AI Chat interface is required for the application.
 
 # Requirements
 
