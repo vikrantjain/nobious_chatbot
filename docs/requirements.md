@@ -101,7 +101,7 @@ An AI Chat interface is required for the application.
 - All responses must use plain text format
 - Dates must be formatted as: MM/DD/YYYY (e.g., "01/15/2024")
 - Currency must be formatted as: $X,XXX.XX (e.g., "$1,234.56")
-- Quantities must be whole numbers with "units" label (e.g., "150 units")
+- Quantities such as liters, feet, meters, gallons, etc. can be entered with decimals.
 - Entity references must include type (e.g., "Order #12345", "Product SKU-001")
 - Multiple items must be presented as numbered or bulleted lists
 - For large result sets, limit to first 5-10 items with count (e.g., "Showing 5 of 23 results")
