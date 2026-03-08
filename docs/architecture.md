@@ -10,7 +10,7 @@ subgraph cloud [aws]
 subgraph vpc [ims vpc]
     subgraph webapp ["chat service"]
         agent[agent]
-        mcp_tools
+        tools
         memory[in-memory]
         docs_idx["index - BM25S"]
     end
@@ -33,13 +33,13 @@ mobile <--> |chat| nginx
 browser <--> |chat| nginx
 nginx <--> |chat + session-id| webapp
 agent --- llm
-agent <--> mcp_tools
+agent <--> tools
 agent <--> |context|memory
 webapp --> |validate token|auth
 webapp --> logging
 llm --> logging
-mcp_tools --> |account| ims_services
-mcp_tools --> |knowledge base|docs_idx -.- docs
+tools --> |account| ims_services
+tools --> |knowledge base|docs_idx -.- docs
 ```
 
 ## Chat Service Flow
@@ -52,8 +52,8 @@ participant chatapi
 participant memory
 participant auth
 participant llm
-participant account_tools as Account MCP
-participant doc_tools as Docs MCP
+participant account_tools
+participant doc_tools
 end
 participant ims_services
 client ->> chatapi: POST (token + query)
@@ -93,16 +93,16 @@ flowchart TD
 chat_llm_call
 account_llm_call
 docs_llm_call
-account_mcp_tools
-docs_mcp_tools
+account_tools
+docs_tools
 End
 chat_llm_call -->|account query| account_llm_call
 chat_llm_call --> |general product query|docs_llm_call
 chat_llm_call --> |clarification|End
-account_llm_call --> account_mcp_tools
-account_mcp_tools -.-> account_llm_call
-docs_llm_call --> docs_mcp_tools
-docs_mcp_tools -.-> docs_llm_call
+account_llm_call --> account_tools
+account_tools -.-> account_llm_call
+docs_llm_call --> docs_tools
+docs_tools -.-> docs_llm_call
 account_llm_call --> End
 docs_llm_call --> End
 ```
