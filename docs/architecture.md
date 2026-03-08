@@ -86,6 +86,27 @@ chatapi ->> memory: add query & llm response (session-id)
 chatapi -->> client: response
 ```
 
+## Agent Workflow
+
+```mermaid
+flowchart TD
+chat_llm_call
+account_llm_call
+docs_llm_call
+account_mcp_tools
+docs_mcp_tools
+End
+chat_llm_call -->|account query| account_llm_call
+chat_llm_call --> |general product query|docs_llm_call
+chat_llm_call --> |clarification|End
+account_llm_call --> account_mcp_tools
+account_mcp_tools -.-> account_llm_call
+docs_llm_call --> docs_mcp_tools
+docs_mcp_tools -.-> docs_llm_call
+account_llm_call --> End
+docs_llm_call --> End
+```
+
 ## General Docs/Manuals update lifecycle
 ```mermaid
 flowchart LR

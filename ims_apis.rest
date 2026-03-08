@@ -1,3 +1,4 @@
+@tenant_id=1
 @access_token={{user_auth.response.body.payload.jwt}}
 @refresh_token={{user_auth.response.body.payload.refreshToken}}
 @user = {{user_auth.response.body.payload.user}}
@@ -9,7 +10,7 @@
 # @name user_auth
 curl --location 'https://tenant1.nobious.io:5443/api/ims/user/login' \
 --header 'login-type: NATIVE' \
---header 'tenant_id: 1' \
+--header 'tenant_id: {{tenant_id}}' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "email": "demouser@nobious.com",
@@ -22,7 +23,7 @@ curl --location 'https://tenant1.nobious.io:5443/api/ims/user/login' \
 # @name category_list
 curl --location --request PUT 'https://tenant1.nobious.io:5443/api/inventory/ticket/getForTypeList' \
 --header 'login-type: NATIVE' \
---header 'tenant_id: 1' \
+--header 'tenant_id: {{tenant_id}}' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer {{access_token}}' \
 --data '{"tenantId": 1, "co": "8", "category": "forType"}'
@@ -32,7 +33,7 @@ curl --location --request PUT 'https://tenant1.nobious.io:5443/api/inventory/tic
 # @name company_list
 curl --location 'https://tenant1.nobious.io:5443/api/vista/company/allcompanies' \
 --header 'login-type: NATIVE' \
---header 'tenant_id: 1' \
+--header 'tenant_id: {{tenant_id}}' \
 --header 'Authorization: Bearer {{access_token}}' \
 --data ''
 
@@ -41,7 +42,7 @@ curl --location 'https://tenant1.nobious.io:5443/api/vista/company/allcompanies'
 # @name location_list
 curl --location 'https://tenant1.nobious.io:5443/api/vista/location/getMultipleCompanieslocations/{{company_list.response.body.cmpDetails.[0].cmpCode}}' \
 --header 'login-type: NATIVE' \
---header 'tenant_id: 1' \
+--header 'tenant_id: {{tenant_id}}' \
 --header 'Authorization: Bearer {{access_token}}' \
 --data ''
 
@@ -49,7 +50,7 @@ curl --location 'https://tenant1.nobious.io:5443/api/vista/location/getMultipleC
 ### Get user assigned location by userId:
 curl --location https://tenant1.nobious.io:5443/api/ims/user/getUserAssingedLocationByUserId/{{user_id}} \
 --header 'login-type: NATIVE' \
---header 'tenant_id: 1' \
+--header 'tenant_id: {{tenant_id}}' \
 --header 'Authorization: Bearer {{access_token}}' \
 --data ''
 
@@ -58,7 +59,7 @@ curl --location https://tenant1.nobious.io:5443/api/ims/user/getUserAssingedLoca
 # @name item_list
 curl --location --request PUT 'https://tenant1.nobious.io:5443/api/vista/material/search' \
 --header 'login-type: NATIVE' \
---header 'tenant_id: 1' \
+--header 'tenant_id: {{tenant_id}}' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer {{access_token}}' \
 --data '{"cmp": "{{company_list.response.body.cmpDetails.[0].cmpCode}}", "status": null, "inco": "8", "loc": ["{{location_list.response.body.locDetails.[0].loc}}"]}'
@@ -67,7 +68,7 @@ curl --location --request PUT 'https://tenant1.nobious.io:5443/api/vista/materia
 ### Get Item Detail by Vista location
 curl --location --request PUT 'https://tenant1.nobious.io:5443/api/vista/material/getItemDetailsByVistaLoc/{{item_list.response.body.itemList.[0].cmp}}/{{item_list.response.body.itemList.[0].item}}' \
 --header 'login-type: NATIVE' \
---header 'tenant_id: 1' \
+--header 'tenant_id: {{tenant_id}}' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer {{access_token}}' \
 --data '["{{location_list.response.body.locDetails.[0].loc}}"]'
@@ -76,7 +77,7 @@ curl --location --request PUT 'https://tenant1.nobious.io:5443/api/vista/materia
 ### Get Item's transaction History
 curl --location 'https://tenant1.nobious.io:5443/api/inventory/allocation/allocationHistoryByItem/{{user_id}}/{{item_list.response.body.itemList.[0].cmp}}/{{item_list.response.body.itemList.[0].item}}' \
 --header 'login-type: NATIVE' \
---header 'tenant_id: 1' \
+--header 'tenant_id: {{tenant_id}}' \
 --header 'Authorization: Bearer {{access_token}}' \
 --data ''
 
@@ -84,7 +85,7 @@ curl --location 'https://tenant1.nobious.io:5443/api/inventory/allocation/alloca
 ### Get Item Locations with total qty and pallet qty for each location
 curl --location --request PUT 'https://tenant1.nobious.io:5443/api/inventory/materialLocation/getMaterialLocationListByItemByAssignedLocation/{{user_id}}' \
 --header 'login-type: NATIVE' \
---header 'tenant_id: 1' \
+--header 'tenant_id: {{tenant_id}}' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer {{access_token}}' \
 --data '{"cmp": "{{item_list.response.body.itemList.[0].cmp}}", "item": "{{item_list.response.body.itemList.[0].item}}", "loc": [{{location_list.response.body.locDetails.[0].loc}}]}'
