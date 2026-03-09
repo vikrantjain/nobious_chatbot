@@ -32,16 +32,6 @@ def test_invalid_bearer_format(client):
     assert resp.status_code == 401
 
 
-def test_missing_tenant_id(client):
-    """Missing tenant_id header -> 400."""
-    resp = client.post(
-        "/api/chat",
-        json={"query": "test"},
-        headers={"Authorization": "Bearer valid-token"},
-    )
-    assert resp.status_code == 400
-    assert "tenant_id" in resp.get_json()["error"].lower()
-
 
 def test_invalid_token(client):
     """IMS returns None for bad token -> 401."""

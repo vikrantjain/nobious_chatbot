@@ -9,7 +9,7 @@ class SessionStore:
     """In-memory session store with rate limiting for chat sessions."""
 
     def __init__(self, max_messages: int = 3, rate_limit: int = 3, window_seconds: int = 60):
-        self._sessions: dict[str, dict] = {}
+        self._sessions: dict[str, dict[str, Any]] = {}
         self._request_times: dict[str, list[float]] = defaultdict(list)
         self._lock = Lock()
         self._max_messages = max_messages
@@ -29,7 +29,7 @@ class SessionStore:
             return {"messages": [], "summary": ""}
         return self._sessions[session_id].copy()
 
-    def update_session(self, session_id: str, user_msg: str, assistant_msg: str, summary: str = ""):
+    def update_session(self, session_id: str, user_msg: str, assistant_msg: str, summary: str = "") -> None:
         """Update session with new messages. Keeps only last max_messages pairs."""
         with self._lock:
             if session_id not in self._sessions:
@@ -54,7 +54,13 @@ class SessionStore:
             times.append(now)
             return True
 
-    def clear_session(self, session_id: str):
+    def reset(self) -> None:
+        """Clear all sessions and rate-limit state. Intended for use in tests."""
+        with self._lock:
+            self._sessions.clear()
+            self._request_times.clear()
+
+    def clear_session(self, session_id: str) -> None:
         """Clear a session."""
         with self._lock:
             self._sessions.pop(session_id, None)

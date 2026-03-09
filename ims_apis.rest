@@ -62,7 +62,7 @@ curl --location --request PUT 'https://tenant1.nobious.io:5443/api/vista/materia
 --header 'tenant_id: {{tenant_id}}' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer {{access_token}}' \
---data '{"cmp": "{{company_list.response.body.cmpDetails.[0].cmpCode}}", "status": null, "inco": "8", "loc": ["{{location_list.response.body.locDetails.[0].loc}}"]}'
+--data '{"cmp": "{{company_list.response.body.cmpDetails.[0].cmpCode}}", "status": null, "inco": "{{company_list.response.body.cmpDetails.[0].cmpCode}}", "loc": ["{{location_list.response.body.locDetails.[0].loc}}"]}'
 
 #*************************************************************
 ### Get Item Detail by Vista location

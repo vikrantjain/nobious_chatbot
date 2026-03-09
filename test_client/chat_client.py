@@ -8,7 +8,7 @@ import httpx
 
 def login(ims_url: str, email: str, password: str, tenant_id: str) -> str:
     """Authenticate with IMS and return JWT token."""
-    with httpx.Client(verify=False, timeout=10.0) as client:
+    with httpx.Client(verify=False, timeout=30.0) as client:
         resp = client.post(
             f"{ims_url}/api/ims/user/login",
             headers={"login-type": "NATIVE", "tenant_id": tenant_id, "Content-Type": "application/json"},
@@ -24,7 +24,7 @@ def login(ims_url: str, email: str, password: str, tenant_id: str) -> str:
 
 def send_chat(base_url: str, token: str, tenant_id: str, query: str, session_id: str | None = None) -> dict:
     """Send a chat message and return the response dict."""
-    with httpx.Client(verify=False, timeout=30.0) as client:
+    with httpx.Client(verify=False, timeout=120.0) as client:
         payload = {"query": query}
         if session_id:
             payload["session_id"] = session_id
@@ -62,9 +62,9 @@ def main(base_url: str, ims_url: str, tenant_id: str):
 
     # Authenticate
     if not tenant_id:
-        tenant_id = click.prompt("Tenant ID")
-    email = click.prompt("Email")
-    password = click.prompt("Password", hide_input=True)
+        tenant_id = click.prompt("Tenant ID", default="1")
+    email = click.prompt("Email", default="demouser@nobious.com")
+    password = click.prompt("Password", hide_input=True, default="Nobious2025")
 
     try:
         token = login(ims_url, email, password, tenant_id)

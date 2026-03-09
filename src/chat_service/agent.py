@@ -12,6 +12,7 @@ from langgraph.graph.message import add_messages
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
+from src.chat_service.config import config
 from src.chat_service.prompts import ACCOUNT_SYSTEM_PROMPT, DOCS_SYSTEM_PROMPT, ROUTER_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -29,9 +30,9 @@ class AgentState(TypedDict):
 
 
 class QueryType(Enum):
-    account_query = "1"
-    product_docs_query = "2"
-    none = "None"
+    account_query = "account_query"
+    product_docs_query = "product_docs_query"
+    none = "none"
 
 
 class ChatStructure(BaseModel):
@@ -46,8 +47,6 @@ class ChatStructure(BaseModel):
 
 def create_agent(account_tools: list[BaseTool], doc_tools: list[BaseTool]):
     """Create the LangGraph agent with separate account and doc tool sets."""
-    from src.chat_service.config import config
-
     llm = init_chat_model(config.llm_model, model_provider=config.llm_provider)
 
     chat_llm = llm.with_structured_output(ChatStructure)
@@ -84,33 +83,33 @@ def create_agent(account_tools: list[BaseTool], doc_tools: list[BaseTool]):
             error_msg = SERVICE_UNAVAILABLE_MSG
             return Command(goto=END, update={"error": error_msg, "response": error_msg})
 
-    def account_llm_call(state: AgentState) -> Command[Literal["account_mcp_tools", "__end__"]]:
+    def account_llm_call(state: AgentState) -> Command[Literal["account_tools", "__end__"]]:
         """Invoke LLM with account tools; route to tool executor or end."""
         messages = [SystemMessage(content=ACCOUNT_SYSTEM_PROMPT)] + state["messages"]
         try:
             response = account_llm.invoke(messages)
             if hasattr(response, "tool_calls") and response.tool_calls:
-                return Command(goto="account_mcp_tools", update={"messages": [response]})
+                return Command(goto="account_tools", update={"messages": [response]})
             return Command(goto=END, update={"messages": [response], "response": response.content, "error": None})
         except Exception as e:
             logger.error(f"Account LLM call failed: {e}")
             error_msg = SERVICE_UNAVAILABLE_MSG
             return Command(goto=END, update={"error": error_msg, "response": error_msg})
 
-    def docs_llm_call(state: AgentState) -> Command[Literal["docs_mcp_tools", "__end__"]]:
+    def docs_llm_call(state: AgentState) -> Command[Literal["docs_tools", "__end__"]]:
         """Invoke LLM with doc tools; route to tool executor or end."""
         messages = [SystemMessage(content=DOCS_SYSTEM_PROMPT)] + state["messages"]
         try:
             response = docs_llm.invoke(messages)
             if hasattr(response, "tool_calls") and response.tool_calls:
-                return Command(goto="docs_mcp_tools", update={"messages": [response]})
+                return Command(goto="docs_tools", update={"messages": [response]})
             return Command(goto=END, update={"messages": [response], "response": response.content, "error": None})
         except Exception as e:
             logger.error(f"Docs LLM call failed: {e}")
             error_msg = SERVICE_UNAVAILABLE_MSG
             return Command(goto=END, update={"error": error_msg, "response": error_msg})
 
-    def account_mcp_tools(state: AgentState) -> Command[Literal["account_llm_call"]]:
+    def account_tools(state: AgentState) -> Command[Literal["account_llm_call"]]:
         """Execute account tool calls, injecting access_token from state."""
         last_message = state["messages"][-1]
         access_token = state.get("access_token", "")
@@ -120,7 +119,8 @@ def create_agent(account_tools: list[BaseTool], doc_tools: list[BaseTool]):
             try:
                 tool = account_tool_map.get(tool_call["name"])
                 if tool:
-                    args = {**tool_call["args"], "access_token": access_token, "tenant_id": tenant_id}
+                    user_id = state.get("user_id", "")
+                    args = {**tool_call["args"], "access_token": access_token, "tenant_id": tenant_id, "user_id": user_id}
                     result = asyncio.run(tool.ainvoke(args))
                     logger.debug(f"Account tool '{tool_call['name']}' succeeded")
                     tool_messages.append(ToolMessage(content=str(result), tool_call_id=tool_call["id"]))
@@ -137,7 +137,7 @@ def create_agent(account_tools: list[BaseTool], doc_tools: list[BaseTool]):
                 ))
         return Command(goto="account_llm_call", update={"messages": tool_messages})
 
-    def docs_mcp_tools(state: AgentState) -> Command[Literal["docs_llm_call"]]:
+    def docs_tools(state: AgentState) -> Command[Literal["docs_llm_call"]]:
         """Execute documentation tool calls."""
         last_message = state["messages"][-1]
         tool_messages = []
@@ -165,8 +165,8 @@ def create_agent(account_tools: list[BaseTool], doc_tools: list[BaseTool]):
     graph.add_node("chat_llm_call", chat_llm_call)
     graph.add_node("account_llm_call", account_llm_call)
     graph.add_node("docs_llm_call", docs_llm_call)
-    graph.add_node("account_mcp_tools", account_mcp_tools)
-    graph.add_node("docs_mcp_tools", docs_mcp_tools)
+    graph.add_node("account_tools", account_tools)
+    graph.add_node("docs_tools", docs_tools)
     graph.set_entry_point("chat_llm_call")
 
     return graph.compile(checkpointer=MemorySaver())

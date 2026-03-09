@@ -5,7 +5,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     ims_base_url: str = "http://localhost:5443"
-    ims_auth_url: str = "http://localhost:5443"
     llm_model: str = "claude-haiku-4-5-20251001"
     llm_provider: str = "bedrock_converse"
     github_repo_url: str = ""

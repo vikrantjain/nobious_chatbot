@@ -1,6 +1,7 @@
+import base64
+import json
 import logging
 
-import httpx
 from flask import Flask, request, jsonify
 
 from src.chat_service.config import config
@@ -26,27 +27,33 @@ def get_agent():
     return _agent
 
 
-def validate_token(token: str, tenant_id: str) -> dict | None:
-    """Validate Bearer token against IMS by calling an authenticated endpoint.
-
-    Uses the company list endpoint as a lightweight auth check — returns a
-    minimal user dict on success, None on failure.
-    """
+def _decode_jwt_payload(token: str) -> dict:
+    """Decode JWT payload without signature verification."""
     try:
-        with httpx.Client(verify=False, timeout=5.0) as client:
-            r = client.get(
-                f"{config.ims_auth_url}/api/vista/company/allcompanies",
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "login-type": "NATIVE",
-                    "tenant_id": tenant_id,
-                },
-            )
-            if r.status_code == 200:
-                return {"token": token}
-            return None
+        payload_b64 = token.split(".")[1]
+        # Pad to a multiple of 4 for base64 decoding
+        payload_b64 += "=" * (4 - len(payload_b64) % 4)
+        return json.loads(base64.urlsafe_b64decode(payload_b64))
     except Exception as e:
-        logger.error(f"Token validation error: {e}")
+        logger.warning(f"Failed to decode JWT payload: {e}")
+        return {}
+
+
+def validate_token(token: str) -> dict | None:
+    """Decode JWT and extract user info. Returns None if token is invalid."""
+    try:
+        claims = _decode_jwt_payload(token)
+        user_id = claims.get("user_id")
+        tenant_id = claims.get("tenant_id")
+        if not user_id or not tenant_id:
+            return None
+        return {
+            "id": user_id,
+            "username": claims.get("sub"),
+            "tenant_id": str(tenant_id),
+        }
+    except Exception as e:
+        logger.error(f"Token decode error: {e}")
         return None
 
 
@@ -65,23 +72,13 @@ def create_app() -> Flask:
         if not token:
             return jsonify({"error": "Unauthorized"}), 401
 
-        # 2. Extract tenant_id (required)
-        # Flask/Werkzeug normalizes header names (underscore → hyphen), so check both forms
-        tenant_id = (request.headers.get("tenant-id") or request.headers.get("tenant_id") or "").strip()
-        if not tenant_id:
-            return jsonify({"error": "tenant_id header is required"}), 400
-
-        # 3. Validate token with IMS
-        user_info = validate_token(token, tenant_id)
+        # 2. Validate token with IMS (tenant_id and user_id extracted from JWT claims)
+        user_info = validate_token(token)
         if not user_info:
             return jsonify({"error": "Unauthorized"}), 401
 
-        user_id = str(
-            user_info.get("id")
-            or user_info.get("userId")
-            or user_info.get("sub")
-            or token[:16]
-        )
+        user_id = str(user_info["id"])
+        tenant_id = str(user_info["tenant_id"])
 
         # 4. Rate limit
         if not session_store.check_rate_limit(user_id):

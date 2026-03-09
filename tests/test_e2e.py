@@ -209,7 +209,7 @@ class TestAccountQueryPath:
         agent = make_agent(FakeLLM(
             chat_responses=[ChatStructure(query_type=QueryType.account_query)],
             account_responses=[
-                AIMessage(content="", tool_calls=[tc]),   # triggers account_mcp_tools
+                AIMessage(content="", tool_calls=[tc]),   # triggers account_tools
                 AIMessage(content="You have 1 company: Acme Corp."),
             ],
         ))
@@ -218,7 +218,7 @@ class TestAccountQueryPath:
         assert _company_spy.called
 
     def test_access_token_injected_from_state_not_llm_args(self, base_state):
-        """account_mcp_tools must inject access_token and tenant_id from AgentState, not from LLM-generated args."""
+        """account_tools must inject access_token and tenant_id from AgentState, not from LLM-generated args."""
         base_state["access_token"] = "secret-bearer-token"
         tc = tool_call("fake_get_all_companies", {})  # no access_token or tenant_id in LLM args
 
@@ -236,7 +236,7 @@ class TestAccountQueryPath:
         assert call_kwargs["tenant_id"] == 1
 
     def test_tool_error_produces_unavailability_tool_message(self, base_state):
-        """If a tool raises, account_mcp_tools puts the standard error text into a ToolMessage."""
+        """If a tool raises, account_tools puts the standard error text into a ToolMessage."""
         _company_spy.side_effect = Exception("IMS down")
         tc = tool_call("fake_get_all_companies", {})
 
@@ -325,7 +325,7 @@ class TestDocsQueryPath:
         assert _docs_spy.call_args[1]["query"] == "how does inventory work"
 
     def test_docs_tool_error_produces_unavailability_message(self, base_state):
-        """If search_documentation raises, docs_mcp_tools stores the standard error in a ToolMessage."""
+        """If search_documentation raises, docs_tools stores the standard error in a ToolMessage."""
         _docs_spy.side_effect = Exception("BM25S crash")
         tc = tool_call("fake_search_documentation", {"query": "inventory", "top_k": 3})
 
@@ -434,7 +434,7 @@ class TestFlaskE2EPipeline:
         # Patch token validation
         monkeypatch.setattr(
             "src.chat_service.app.validate_token",
-            lambda token, tenant_id: {"id": "u1"} if token != "bad" else None,
+            lambda token: {"id": "u1", "tenant_id": "1"} if token != "bad" else None,
         )
 
         # Build a real agent with the fake LLM and inject it via get_agent()

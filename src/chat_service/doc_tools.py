@@ -14,7 +14,8 @@ _chunks: list[dict] = []
 _stemmer = None
 
 
-def _load_index():
+def _load_index() -> None:
+    """Load the BM25S index and stemmer from disk into module-level globals."""
     global _retriever, _chunks, _stemmer
     import bm25s
     import Stemmer
@@ -58,7 +59,7 @@ def search_documentation(query: str, top_k: int = 5) -> list[dict[str, Any]]:
         return []
 
     try:
-        import bm25s
+        import bm25s  # noqa: PLC0415 — deferred to avoid slow startup when index missing
 
         query_tokens = bm25s.tokenize(query, stopwords="en", stemmer=_stemmer)
         results, scores = _retriever.retrieve(query_tokens, k=min(top_k, len(_chunks)))

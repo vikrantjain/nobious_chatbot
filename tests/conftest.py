@@ -5,10 +5,10 @@ from unittest.mock import MagicMock
 @pytest.fixture
 def mock_validate_token(monkeypatch):
     """Mock IMS token validation to return a test user."""
-    def _validate(token: str, tenant_id: str):
+    def _validate(token: str):
         if token == "bad-token":
             return None
-        return {"id": "test-user-123", "username": "testuser", "email": "test@example.com"}
+        return {"id": "test-user-123", "username": "testuser", "tenant_id": "1"}
 
     monkeypatch.setattr("src.chat_service.app.validate_token", _validate)
     return _validate
@@ -39,8 +39,7 @@ def app(mock_validate_token, mock_agent_invoke):
     flask_app.config["TESTING"] = True
 
     # Reset session store state between tests
-    session_store._sessions.clear()
-    session_store._request_times.clear()
+    session_store.reset()
 
     return flask_app
 

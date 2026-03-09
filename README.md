@@ -27,6 +27,7 @@ nobious_chatbot/
 │   └── chat_service/
 │       ├── app.py              # Flask app, POST /api/chat
 │       ├── agent.py            # LangGraph agent (tools, memory, LLM)
+│       ├── prompts.py          # System prompts for each LLM node
 │       ├── account_tools.py    # 8 IMS API tools (LangChain @tool)
 │       ├── doc_tools.py        # BM25S document search tool (LangChain @tool)
 │       ├── config.py           # pydantic-settings config
@@ -35,8 +36,8 @@ nobious_chatbot/
 │   └── index_docs.py           # CLI: clone GitHub repo + build BM25S index
 ├── tests/
 │   ├── conftest.py
-│   ├── test_account_mcp.py
-│   ├── test_doc_mcp.py
+│   ├── test_account_tools.py
+│   ├── test_doc_tools.py
 │   ├── test_chat_service.py
 │   └── test_e2e.py
 └── test_client/
@@ -70,7 +71,6 @@ Edit `.env` and fill in:
 | Variable | Description |
 |---|---|
 | `IMS_BASE_URL` | Nobious IMS base URL (e.g. `https://tenant1.nobious.io:5443`) |
-| `IMS_AUTH_URL` | IMS auth service URL (same as base URL by default) |
 | `AWS_REGION` | AWS region where Bedrock is enabled (e.g. `us-east-1`) |
 | `AWS_ACCESS_KEY_ID` | AWS access key with Bedrock permissions |
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key |
@@ -144,8 +144,8 @@ Content-Type: application/json
 uv run pytest tests/ -v
 
 # Individual suites
-uv run pytest tests/test_account_mcp.py -v    # 10 tests — IMS tool functions (httpx mocked)
-uv run pytest tests/test_doc_mcp.py -v        # 5 tests  — BM25S doc search + CLI indexer
+uv run pytest tests/test_account_tools.py -v  # 10 tests — IMS tool functions (httpx mocked)
+uv run pytest tests/test_doc_tools.py -v      # 5 tests  — BM25S doc search + CLI indexer
 uv run pytest tests/test_chat_service.py -v   # 11 tests — Flask API boundary (agent mocked)
 uv run pytest tests/test_e2e.py -v            # 19 tests — real LangGraph graph, LLM mocked
 ```
@@ -182,7 +182,7 @@ To update the index after documentation changes:
 
 | Tool | IMS Endpoint |
 |---|---|
-| `get_ticket_types` | `PUT /api/inventory/ticket/getForTypeList` |
+| `get_category_list` | `PUT /api/inventory/ticket/getForTypeList` |
 | `get_all_companies` | `GET /api/vista/company/allcompanies` |
 | `get_company_locations` | `GET /api/vista/location/getMultipleCompanieslocations/{code}` |
 | `get_user_assigned_locations` | `GET /api/ims/user/getUserAssingedLocationByUserId/{id}` |
